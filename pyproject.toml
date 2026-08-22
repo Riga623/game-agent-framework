@@ -1,5 +1,5 @@
 [project]
-name = "game-framework"
+name = "game-agent-framework"
 version = "0.1.0"
 description = "A small, well-documented implementation of the GAME agent framework (Goals, Actions, Memory, Environment)."
 readme = "README.md"

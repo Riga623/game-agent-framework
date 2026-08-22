@@ -3,8 +3,8 @@
 ## Getting set up
 
 ```bash
-git clone https://github.com/USERNAME/game-framework.git
-cd game-framework
+git clone https://github.com/USERNAME/game-agent-framework.git
+cd game-agent-framework
 python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 ```

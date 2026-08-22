@@ -1,6 +1,6 @@
-# game-framework
+# game-agent-framework
 
-[![CI](https://github.com/USERNAME/game-framework/actions/workflows/ci.yml/badge.svg)](https://github.com/USERNAME/game-framework/actions/workflows/ci.yml)
+[![CI](https://github.com/USERNAME/game-agent-framework/actions/workflows/ci.yml/badge.svg)](https://github.com/USERNAME/game-agent-framework/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](pyproject.toml)
 
@@ -32,8 +32,8 @@ change.
 ## Quickstart
 
 ```bash
-git clone https://github.com/USERNAME/game-framework.git
-cd game-framework
+git clone https://github.com/USERNAME/game-agent-framework.git
+cd game-agent-framework
 python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 
@@ -69,7 +69,7 @@ python -m game.examples.file_explorer
 ## Project layout
 
 ```
-game-framework/
+game-agent-framework/
 ├── src/game/
 │   ├── core.py          # Goal, Action, ActionRegistry, Memory, Environment
 │   ├── tools.py          # @register_tool decorator (function -> Action, automatically)
