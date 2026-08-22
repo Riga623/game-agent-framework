@@ -48,16 +48,20 @@ mechanisms in this codebase exist specifically for this:
   so a broken tool call becomes information the agent can act on, not a
   crashed process.
 * `ParseError` (`src/game/language.py`) plays the same role one level up, for
-  when the *model's response itself* can't be turned into a valid action —
-  either because it didn't call a tool at all, or called one that isn't
-  registered. Both cases raise a `ParseError` carrying a specific,
-  actionable `feedback` string ("There is no tool named 'X'. Available
-  tools are: ..." rather than "invalid response"), which `Agent.run()`
-  writes into memory as environment feedback and then gives the agent
-  another turn to recover from. `tests/test_agent_loop.py::
-  test_agent_recovers_from_a_response_with_no_tool_call` and
-  `test_agent_recovers_from_an_unknown_tool_name` exercise exactly this
-  path.
+  when the *model's response itself* can't be turned into a valid action.
+  Four situations raise it, each with a distinct, actionable message: no
+  tool was called at all; an unregistered tool name was called (raised in
+  `Agent.get_action`); more than one tool was called in a single turn,
+  which this one-action-per-iteration loop can't run (rather than silently
+  keeping only the first or last call and dropping the rest — see
+  `response_from_anthropic_message()` in `src/game/llm.py`, which captures
+  every tool call a provider returns instead of overwriting as it iterates);
+  or the response was truncated (e.g. hit a max-tokens limit), so any tool
+  call parsed out of it can't be trusted as complete. In every case,
+  `Agent.run()` writes the `feedback` into memory as environment feedback
+  and gives the agent another turn to recover from — never a bare "invalid
+  response." `tests/test_agent_loop.py`, `tests/test_language.py`, and
+  `tests/test_llm.py` each exercise a different layer of this.
 
 ## Why a decorator for tool registration
 
@@ -124,11 +128,32 @@ Kept out of scope, on purpose, to keep this implementation legible:
   eventually need a strategy here (summarization, a sliding window); the
   `Memory` class is deliberately shaped so that could be added as a
   subclass without touching `Agent.run()`.
-* **No retry/backoff around the LLM call itself.** `AnthropicProvider`
-  makes one call per loop iteration and lets a network error propagate.
-  Production use would likely want retries with backoff at that layer.
+* **No retry/backoff around the LLM call itself.** `AnthropicProvider` has
+  a finite `timeout` (default 60s, so a stalled connection can't hang the
+  agent forever), but a call that fails outright — a network error, a rate
+  limit — still just propagates. Production use would likely want retries
+  with backoff at that layer.
 * **No structured `tool_result` role.** `format_memory()` sends environment
-  feedback back as a `user`-role message rather than using a provider's
-  native tool-result message type. That keeps `AgentLanguage` provider-
-  agnostic at the cost of not using Anthropic's tool-result formatting —
-  a reasonable next step for `AnthropicProvider` specifically.
+  feedback back as a `user`-role message (JSON-encoded, not Python's
+  `str()` repr, as of the multi-tool-call fix) rather than using a
+  provider's native tool-result message type. That keeps `AgentLanguage`
+  provider-agnostic at the cost of not using Anthropic's tool-result
+  formatting — a reasonable next step for `AnthropicProvider` specifically.
+* **Only the first of several parallel tool calls is ever executed.** When
+  a model calls multiple tools in one turn, `ParseError` now surfaces that
+  clearly instead of silently dropping calls (see "Feedback quality"
+  above) — but the recovery is still "pick one and try again," not actual
+  parallel execution. Running multiple actions from one turn concurrently
+  would be a real feature addition (aggregating multiple results into
+  memory, deciding termination if one of several calls is terminal), not
+  a small fix, so it's deliberately out of scope here.
+* **`tools.py`'s registry is global, module-level, mutable state.**
+  `@register_tool` writes into module-level `tools`/`tools_by_tag` dicts,
+  which is why `tests/test_tools.py` has to manually clear them between
+  tests. It also means two unrelated modules that each decorate a
+  same-named function silently overwrite each other in that one shared
+  registry, and it isn't thread-safe. An instance-scoped registry (a
+  `ToolRegistry` object you construct rather than a module-level global)
+  would fix this properly; left as-is for now since it's a real refactor,
+  not a bug fix, and every example agent in this repo only ever registers
+  its own uniquely-named tools.

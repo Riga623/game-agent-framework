@@ -40,3 +40,8 @@ automatically on every pull request.
 
 Open a GitHub issue with a clear description and, for bugs, steps to
 reproduce.
+
+## Code of conduct
+
+Participation in this project is governed by our
+[Code of Conduct](CODE_OF_CONDUCT.md).

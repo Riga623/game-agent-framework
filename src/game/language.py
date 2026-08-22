@@ -9,6 +9,7 @@ how well a model can decide what to do next.
 
 from __future__ import annotations
 
+import json
 from abc import ABC, abstractmethod
 
 from .core import Action, Goal, Memory
@@ -29,13 +30,16 @@ _MEMORY_TYPE_TO_ROLE = {
 class ParseError(Exception):
     """A model's response couldn't be turned into a valid, runnable action.
 
-    Two situations raise this: the response didn't call any tool at all, or
-    it called a tool name that isn't registered. Both carry a `feedback`
-    message written to be fed straight back into memory as environment
-    feedback, so the agent gets a chance to self-correct on the next loop
-    iteration instead of the run crashing outright — mirroring how a rich,
-    specific error message (rather than a bare error code) let the
-    microwave example recover in the source material.
+    Four situations raise this: the response didn't call any tool at all;
+    it called a tool name that isn't registered (raised by Agent.get_action,
+    not here); it called more than one tool in a single turn, which this
+    one-action-per-iteration loop can't run; or the response was truncated
+    (e.g. hit a max-tokens limit) before it could finish. All of them carry
+    a `feedback` message written to be fed straight back into memory as
+    environment feedback, so the agent gets a chance to self-correct on the
+    next loop iteration instead of the run crashing outright — mirroring
+    how a rich, specific error message (rather than a bare error code) let
+    the microwave example recover in the source material.
     """
 
     def __init__(self, feedback: str):
@@ -94,7 +98,13 @@ class AgentFunctionCallingActionLanguage(AgentLanguage):
             role = _MEMORY_TYPE_TO_ROLE.get(item["type"], "user")
             content = item["content"]
             if not isinstance(content, str):
-                content = str(content)
+                # json.dumps rather than str(): a tool result is usually a
+                # dict (see Environment.format_result), and Python's str()
+                # renders that as repr — single-quoted, not valid JSON,
+                # which is a worse shape to hand a model than real JSON.
+                # default=str covers any non-JSON-native value (e.g. a
+                # custom object a tool returns) rather than raising.
+                content = json.dumps(content, default=str)
             messages.append({"role": role, "content": content})
         return messages
 
@@ -106,6 +116,22 @@ class AgentFunctionCallingActionLanguage(AgentLanguage):
         )
 
     def parse_response(self, response: LLMResponse) -> dict:
+        if response.truncated:
+            raise ParseError(
+                "Your last response was cut off before it finished (likely a "
+                "max-tokens limit), so any tool call in it may be incomplete "
+                "or invalid. Try again with a shorter response — call the "
+                "tool directly rather than explaining your reasoning first."
+            )
+
+        if response.extra_tool_calls:
+            called = [response.tool_name, *(name for name, _ in response.extra_tool_calls)]
+            raise ParseError(
+                f"You called {len(called)} tools in one turn ({', '.join(called)}), "
+                "but this agent executes exactly one action per step. Pick the "
+                "single most useful tool call from that list and call only that one."
+            )
+
         if not response.tool_name:
             raise ParseError(
                 "Your last response didn't call a tool. Every response must "

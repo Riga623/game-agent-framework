@@ -1,6 +1,6 @@
 [project]
 name = "game-agent-framework"
-version = "0.1.0"
+dynamic = ["version"]
 description = "A small, well-documented implementation of the GAME agent framework (Goals, Actions, Memory, Environment)."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -23,16 +23,24 @@ dev = [
 requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
+[tool.setuptools.dynamic]
+# Read the version from src/game/__init__.py instead of duplicating it
+# here — a hardcoded second copy is exactly the kind of drift-prone
+# duplication this project's own DESIGN_NOTES.md argues against for tool
+# schemas; there's no reason the project's own version number should be
+# any different.
+version = { attr = "game.__version__" }
+
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.setuptools.package-data]
 # sample_project/README.md is non-.py fixture data that the file_explorer
-# and readme_agent demos read at runtime. setuptools only includes .py
-# files by default, so without this, a real `pip install` of a built
-# wheel (as opposed to `pip install -e .`) would silently ship without
-# it and the bundled demo would misreport what it found.
-game = ["examples/sample_project/*"]
+# and readme_agent demos read at runtime, and py.typed (PEP 561) has no
+# .py extension either. setuptools only includes .py files by default, so
+# without this, a real `pip install` of a built wheel (as opposed to
+# `pip install -e .`) would silently ship without them.
+game = ["py.typed", "examples/sample_project/*"]
 
 [tool.ruff]
 line-length = 100

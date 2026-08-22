@@ -136,6 +136,7 @@ pytest --cov=game --cov-report=term-missing   # tests + coverage
   quality, decorator-based sync, simulation-first design).
 * [CONTRIBUTING.md](CONTRIBUTING.md)
 * [SECURITY.md](SECURITY.md)
+* [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
 
 ## License
 

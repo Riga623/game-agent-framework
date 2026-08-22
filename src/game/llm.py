@@ -60,6 +60,47 @@ class ScriptedProvider:
         return self._next
 
 
+def response_from_anthropic_message(message) -> LLMResponse:
+    """Map an Anthropic SDK `Message` onto our provider-agnostic `LLMResponse`.
+
+    Split out from `AnthropicProvider.__call__` specifically so this logic
+    — the one piece of the framework that actually has to match a real
+    external API's response shape — is unit-testable on its own, with a
+    lightweight fake `message` object, without needing the `anthropic`
+    package installed, an API key, or a network call. See
+    `tests/test_llm.py`.
+
+    Two things this function is careful not to get wrong:
+
+    * If the model calls more than one tool in a single turn (Claude
+      supports parallel tool use), every call is captured — the first in
+      `tool_name`/`args`, the rest in `extra_tool_calls` — rather than
+      silently keeping only the last one and dropping the others.
+    * `message.stop_reason == "max_tokens"` sets `truncated=True`, so a
+      tool call parsed out of a cut-off response is flagged as unreliable
+      rather than executed as if it were complete.
+    """
+    tool_calls: list[tuple[str, dict]] = []
+    text_parts: list[str] = []
+
+    for block in message.content:
+        if block.type == "tool_use":
+            tool_calls.append((block.name, block.input))
+        elif block.type == "text":
+            text_parts.append(block.text)
+
+    tool_name, args = tool_calls[0] if tool_calls else (None, {})
+
+    return LLMResponse(
+        tool_name=tool_name,
+        args=args,
+        text="\n".join(text_parts) or None,
+        raw=message,
+        extra_tool_calls=tool_calls[1:],
+        truncated=getattr(message, "stop_reason", None) == "max_tokens",
+    )
+
+
 class AnthropicProvider:
     """Calls a real Claude model via the `anthropic` package.
 
@@ -74,13 +115,18 @@ class AnthropicProvider:
     one hardcoded.
     """
 
-    def __init__(self, model: str = "claude-sonnet-4-5", max_tokens: int = 1024):
+    def __init__(
+        self,
+        model: str = "claude-sonnet-4-5",
+        max_tokens: int = 1024,
+        timeout: float = 60.0,
+    ):
         try:
             import anthropic
         except ImportError as e:  # pragma: no cover - exercised only without the extra
             raise ImportError(
                 "AnthropicProvider requires the 'anthropic' package. "
-                "Install it with: pip install 'game-framework[anthropic]'"
+                "Install it with: pip install 'game-agent-framework[anthropic]'"
             ) from e
 
         api_key = os.environ.get("ANTHROPIC_API_KEY")
@@ -92,7 +138,11 @@ class AnthropicProvider:
                 "key at all via ScriptedProvider — see README.md.)"
             )
 
-        self._client = anthropic.Anthropic(api_key=api_key)
+        # A finite default timeout matters here specifically because this
+        # call sits inside Agent.run()'s loop: a client with no timeout that
+        # hangs on a stalled connection hangs the entire agent, silently,
+        # with no way for a caller to notice something's wrong.
+        self._client = anthropic.Anthropic(api_key=api_key, timeout=timeout)
         self._model = model
         self._max_tokens = max_tokens
 
@@ -104,21 +154,4 @@ class AnthropicProvider:
             messages=prompt.messages,
             tools=prompt.tools,
         )
-
-        tool_name = None
-        args: dict = {}
-        text_parts: list[str] = []
-
-        for block in message.content:
-            if block.type == "tool_use":
-                tool_name = block.name
-                args = block.input
-            elif block.type == "text":
-                text_parts.append(block.text)
-
-        return LLMResponse(
-            tool_name=tool_name,
-            args=args,
-            text="\n".join(text_parts) or None,
-            raw=message,
-        )
+        return response_from_anthropic_message(message)
