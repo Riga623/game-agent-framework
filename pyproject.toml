@@ -1,0 +1,37 @@
+[project]
+name = "game-framework"
+version = "0.1.0"
+description = "A small, well-documented implementation of the GAME agent framework (Goals, Actions, Memory, Environment)."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Esteban A. Rodriguez" }]
+keywords = ["agents", "llm", "agentic-ai", "framework", "tool-use"]
+dependencies = []
+
+[project.optional-dependencies]
+anthropic = [
+    "anthropic>=0.34",
+]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "ruff>=0.5",
+]
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
