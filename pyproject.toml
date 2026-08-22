@@ -26,6 +26,14 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+# sample_project/README.md is non-.py fixture data that the file_explorer
+# and readme_agent demos read at runtime. setuptools only includes .py
+# files by default, so without this, a real `pip install` of a built
+# wheel (as opposed to `pip install -e .`) would silently ship without
+# it and the bundled demo would misreport what it found.
+game = ["examples/sample_project/*"]
+
 [tool.ruff]
 line-length = 100
 target-version = "py310"

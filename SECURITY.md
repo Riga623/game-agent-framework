@@ -31,5 +31,6 @@ maintained branch (`main`). Security fixes are applied there only.
 ## Reporting a vulnerability
 
 Please report suspected vulnerabilities privately using GitHub's
-["Report a vulnerability"](../../security/advisories/new) feature on this
-repository's **Security** tab, rather than filing a public issue.
+["Report a vulnerability"](https://github.com/USERNAME/game-agent-framework/security/advisories/new)
+feature on this repository's **Security** tab, rather than filing a public
+issue.

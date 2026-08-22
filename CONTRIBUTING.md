@@ -29,7 +29,7 @@ automatically on every pull request.
 - New actions/tools should have a genuinely descriptive name and
   docstring — see `docs/DESIGN_NOTES.md`, "Tool naming and description are
   not cosmetic," for why this isn't a style nitpick.
-- Prefer `@register_tool` (see `game/tools.py`) for new tools over hand-
+- Prefer `@register_tool` (see `src/game/tools.py`) for new tools over hand-
   built `Action(...)` objects, unless you have a specific reason to want
   the schema decoupled from the function signature.
 - Add or update tests for any behavior change. New agent-loop behavior

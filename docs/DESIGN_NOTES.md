@@ -8,9 +8,10 @@ exactly where in the code it shows up.
 
 An agent is an automated conversation: construct a prompt, get a response,
 turn the response into an action, execute it, feed the result back as the
-next prompt, repeat. `Agent.run()` in `game/agent.py` is a direct
-implementation of that six-step loop, and it is deliberately kept under 50
-lines. Every other file in this package exists to hand that loop clean,
+next prompt, repeat. `Agent.run()` in `src/game/agent.py` is a direct
+implementation of that six-step loop, and the method itself is
+deliberately kept under 50 lines. Every other file in this package exists
+to hand that loop clean,
 well-defined inputs (`Goal`, `Action`, `Memory`, `Environment`,
 `AgentLanguage`) so the loop itself never needs agent-specific
 conditional logic. Building a new agent means writing new goals and
@@ -41,12 +42,12 @@ Rich, specific error messages let a model self-correct; opaque ones (a bare
 error code, a stack trace with no explanation) leave it stuck. Two
 mechanisms in this codebase exist specifically for this:
 
-* `Environment.execute_action()` (`game/core.py`) never lets an exception
+* `Environment.execute_action()` (`src/game/core.py`) never lets an exception
   propagate out of a tool call. It always returns a structured result —
   `{"tool_executed": False, "error": ..., "traceback": ...}` on failure —
   so a broken tool call becomes information the agent can act on, not a
   crashed process.
-* `ParseError` (`game/language.py`) plays the same role one level up, for
+* `ParseError` (`src/game/language.py`) plays the same role one level up, for
   when the *model's response itself* can't be turned into a valid action —
   either because it didn't call a tool at all, or called one that isn't
   registered. Both cases raise a `ParseError` carrying a specific,
@@ -64,7 +65,7 @@ Registering an `Action` by hand means the name, description, and parameter
 schema live in a second place, separate from the function they describe —
 and in practice that second place drifts out of sync with the first the
 moment someone adds a parameter and forgets to update the schema.
-`@register_tool` (`game/tools.py`) removes the second place: it introspects
+`@register_tool` (`src/game/tools.py`) removes the second place: it introspects
 the decorated function's signature (via `inspect` and `typing.
 get_type_hints`) and docstring at decoration time, so the function is the
 only thing you ever have to edit. `readme_agent.py` uses this style;
@@ -76,7 +77,7 @@ claim taken on faith.
 
 A single long "here's everything you need to know" string is hard to
 reason about, hard to reorder, and hard to combine from reusable pieces.
-`Goal` (`game/core.py`) is a small frozen dataclass with a `priority`, so
+`Goal` (`src/game/core.py`) is a small frozen dataclass with a `priority`, so
 `AgentFunctionCallingActionLanguage.format_goals()` can sort goals before
 rendering them into the system prompt — which matters once an agent has
 several goals that aren't all equally important (e.g. "explore the files"

@@ -20,12 +20,12 @@ GAME names the four things that go in:
 
 | Component | Answers | In this repo |
 |---|---|---|
-| **G**oal | What is the agent trying to achieve, and how? | `Goal` — a prioritized, named objective (`game/core.py`) |
-| **A**ction | What is it allowed to do? | `Action` / `ActionRegistry` — a typed, described toolkit (`game/core.py`, `game/tools.py`) |
-| **M**emory | What has happened so far? | `Memory` — the accumulating record fed back into every prompt (`game/core.py`) |
-| **E**nvironment | Who actually runs an action and reports back? | `Environment` — executes an `Action`, never lets an exception escape (`game/core.py`) |
+| **G**oal | What is the agent trying to achieve, and how? | `Goal` — a prioritized, named objective (`src/game/core.py`) |
+| **A**ction | What is it allowed to do? | `Action` / `ActionRegistry` — a typed, described toolkit (`src/game/core.py`, `src/game/tools.py`) |
+| **M**emory | What has happened so far? | `Memory` — the accumulating record fed back into every prompt (`src/game/core.py`) |
+| **E**nvironment | Who actually runs an action and reports back? | `Environment` — executes an `Action`, never lets an exception escape (`src/game/core.py`) |
 
-`Agent` (`game/agent.py`) is the loop that ties all four together. Building
+`Agent` (`src/game/agent.py`) is the loop that ties all four together. Building
 a new agent means writing new goals and actions — the loop itself doesn't
 change.
 
@@ -45,7 +45,7 @@ python -m game.examples.readme_agent
 ## Demo mode (no API key needed)
 
 Every example agent and the entire test suite runs with **no model, no API
-key, and no network call**, via `ScriptedProvider` (`game/llm.py`) — a
+key, and no network call**, via `ScriptedProvider` (`src/game/llm.py`) — a
 stand-in "model" that replays a fixed script of tool calls. This is the
 coded version of a technique from the design process itself: before
 writing any implementation, you can validate a GAME design by simulating
@@ -103,8 +103,9 @@ game-agent-framework/
  └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-See `game/agent.py` — the whole loop is under 50 lines; everything else in
-the package exists to keep it that short.
+See `src/game/agent.py` — `Agent.run()`, the method that actually runs
+this loop, is under 50 lines; everything else in the package exists to
+keep it that short.
 
 ## Two ways to register a tool
 
