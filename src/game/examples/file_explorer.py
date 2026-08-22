@@ -18,6 +18,7 @@ Or import build_agent() to run it against a real model (requires the
 from __future__ import annotations
 
 import os
+from pathlib import Path
 
 from ..agent import Agent
 from ..core import Action, ActionRegistry, Environment, Goal
@@ -34,7 +35,11 @@ def list_files() -> list[str]:
 def read_file(file_name: str) -> str:
     """Read a file's contents."""
     try:
-        with open(file_name) as f:
+        base = Path.cwd().resolve()
+        target = (base / file_name).resolve()
+        if not target.is_relative_to(base):
+            return f"Error: {file_name} is outside the allowed directory."
+        with open(target) as f:
             return f.read()
     except FileNotFoundError:
         return f"Error: {file_name} not found."

@@ -23,6 +23,25 @@ If you ever spot what looks like a real credential in this repository's
 history, please report it privately (see below) rather than opening a
 public issue.
 
+## Data sent to the LLM provider
+
+When an `Action` raises an exception, `Environment.execute_action()`
+(`src/game/core.py`) captures the full traceback — including local
+filesystem paths — and feeds it into `Memory`, which is then sent to
+whichever provider `AgentLanguage` is configured with (e.g. Anthropic, via
+`AnthropicProvider`). This is a deliberate design choice (see
+`docs/DESIGN_NOTES.md`, "Feedback quality is what lets an agent recover")
+and not a bug, but it does mean: don't point an agent built on this
+framework at a directory containing paths or filenames you don't want
+included in a request to a third-party model API.
+
+The two bundled example tools that read files (`read_file` in
+`file_explorer.py`, `read_project_file` in `readme_agent.py`) restrict
+reads to within the process's current working directory — `../`-style
+traversal and absolute paths outside it are rejected before the file is
+opened — so a misbehaving or adversarially-prompted agent can't use them
+to read arbitrary files elsewhere on disk.
+
 ## Supported versions
 
 This is a small reference implementation with a single actively

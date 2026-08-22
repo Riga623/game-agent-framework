@@ -13,6 +13,7 @@ Run directly for a deterministic, zero-API-key demo:
 from __future__ import annotations
 
 import os
+from pathlib import Path
 
 from ..agent import Agent
 from ..core import Environment, Goal
@@ -48,7 +49,11 @@ def list_project_files() -> list[str]:
 def read_project_file(name: str) -> str:
     """Reads a file from the project. `name` must be one previously returned
     by list_project_files."""
-    with open(name) as f:
+    base = Path.cwd().resolve()
+    target = (base / name).resolve()
+    if not target.is_relative_to(base):
+        raise ValueError(f"{name} is outside the allowed directory.")
+    with open(target) as f:
         return f.read()
 
 

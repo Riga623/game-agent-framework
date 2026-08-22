@@ -119,6 +119,19 @@ offline. It's the same technique — a stand-in for the model, so you can
 control exactly what it does — just captured as code instead of a chat
 transcript.
 
+## Demo file-reading tools are sandboxed to the current directory
+
+`read_file` (`file_explorer.py`) and `read_project_file` (`readme_agent.py`)
+both resolve the requested path against the process's current working
+directory and reject anything that resolves outside it (`Path.resolve()` +
+`is_relative_to()`) before opening the file. Without this check, a model
+that was tricked or went off-script could pass `file_name="../../etc/passwd"`
+(or an absolute path) and the tool would happily read it — the JSON schema
+only constrains the argument to be a string, not to be a safe one. Tests:
+`test_file_explorer_read_file_rejects_path_traversal` and
+`test_readme_agent_read_project_file_rejects_path_traversal` in
+`tests/test_examples.py`.
+
 ## What isn't handled (yet)
 
 Kept out of scope, on purpose, to keep this implementation legible:
